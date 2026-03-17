@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JARVIS - AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-cyan: #00f0ff;
+            --dark-bg: #0a0a0f;
+            --panel-bg: rgba(10, 15, 30, 0.95);
+            --glow-primary: 0 0 20px rgba(0, 212, 255, 0.5);
+            --glow-intense: 0 0 40px rgba(0, 212, 255, 0.8);
+        }
+
+        @font-face {
+            font-family: 'JARVIS';
+            src: local('Courier New'), local('Consolas');
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--dark-bg);
+            color: #fff;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float 10s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { opacity: 0; transform: translateY(100vh) scale(0); }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) scale(1); }
+        }
+
+        /* Main Interface */
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            font-size: 12px;
+            color: var(--neon-blue);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #333;
+            box-shadow: 0 0 5px currentColor;
+            transition: all 0.3s;
+        }
+
+        .status-dot.active {
+            background: #0f0;
+            box-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.listening {
+            background: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Central Core */
+        .core-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .core-wrapper {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .core-ring {
+            position: absolute;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .core-ring:nth-child(1) {
+            width: 100%;
+            height: 100%;
+            animation: rotate 20s linear infinite;
+        }
+
+        .core-ring:nth-child(2) {
+            width: 80%;
+            height: 80%;
+            animation: rotate 15s linear infinite reverse;
+        }
+
+        .core-ring:nth-child(3) {
+            width: 60%;
+            height: 60%;
+            animation: rotate 10s linear infinite;
+        }
+
+        .core-ring:nth-child(4) {
+            width: 40%;
+            height: 40%;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            animation: pulse-ring 3s ease-in-out infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .core-center {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, var(--neon-cyan) 0%, var(--neon-blue) 50%, transparent 70%);
+            border-radius: 50%;
+            box-shadow: 0 0 60px var(--neon-blue), 0 0 100px rgba(0, 212, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .core-center:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 80px var(--neon-blue), 0 0 120px rgba(0, 212, 255, 0.8);
+        }
+
+        .core-center.active {
+            animation: core-active 2s ease-in-out infinite;
+        }
+
+        @keyframes core-active {
+            0%, 100% { box-shadow: 0 0 60px var(--neon-blue), 0 0 100px rgba(0, 212, 255, 0.5); }
+            50% { box-shadow: 0 0 100px var(--neon-blue), 0 0 150px rgba(0, 212, 255, 0.8); }
+        }
+
+        .core-icon {
+            font-size: 40px;
+            color: white;
+            z-index: 2;
+        }
+
+        /* Waveform Animation */
+        .waveform-container {
+            position: absolute;
+            bottom: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .waveform-container.visible {
+            opacity: 1;
+        }
+
+        .wave-bar {
+            width: 4px;
+            background: linear-gradient(to top, var(--neon-blue), transparent);
+            border-radius: 2px;
+            transition: height 0.1s ease;
+        }
+
+        /* Response Text */
+        .response-area {
+            position: absolute;
+            bottom: 120px;
+            left: 20px;
+            right: 20px;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .response-text {
+            font-size: 18px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+            line-height: 1.5;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            max-width: 100%;
+            word-wrap: break-word;
+        }
+
+        .response-text.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .command-text {
+            font-size: 14px;
+            color: var(--neon-blue);
+            margin-top: 10px;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        /* Wake Word Indicator */
+        .wake-indicator {
+            position: absolute;
+            top: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            border-radius: 20px;
+            color: var(--neon-blue);
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+        }
+
+        .wake-indicator.active {
+            opacity: 1;
+            transform: scale(1);
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px var(--neon-blue); }
+            50% { box-shadow: 0 0 20px var(--neon-blue), 0 0 40px rgba(0, 212, 255, 0.5); }
+        }
+
+        /* Bottom Controls */
+        .controls {
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            background: rgba(0, 212, 255, 0.05);
+            color: var(--neon-blue);
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.3), transparent);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .control-btn:hover::before,
+        .control-btn.active::before {
+            width: 100%;
+            height: 100%;
+        }
+
+        .control-btn:hover {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(0, 212, 255, 0.2);
+            z-index: 100;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .settings-panel.open {
+            right: 0;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .settings-title {
+            font-size: 24px;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--neon-blue);
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-label {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-switch:hover {
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .toggle-text {
+            color: #fff;
+        }
+
+        .toggle-slider {
+            width: 50px;
+            height: 26px;
+            background: #333;
+            border-radius: 13px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .toggle-slider::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: #666;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        .toggle-switch.active .toggle-slider::after {
+            left: 27px;
+            background: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        /* Command History */
+        .history-panel {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid var(--neon-blue);
+            margin-bottom: 10px;
+            border-radius: 0 8px 8px 0;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .history-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 5px;
+        }
+
+        .history-cmd {
+            color: var(--neon-blue);
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .history-resp {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+        }
+
+        /* Floating Button */
+        .floating-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 2px solid var(--neon-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 50;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .floating-btn.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+        }
+
+        .floating-btn svg {
+            width: 30px;
+            height: 30px;
+            fill: var(--neon-blue);
+        }
+
+        /* Overlay for background mode */
+        .overlay-hint {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--neon-blue);
+            text-align: center;
+            z-index: 200;
+            display: none;
+        }
+
+        .overlay-hint.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.5);
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .core-wrapper {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .response-text {
+                font-size: 16px;
+            }
+            
+            .controls {
+                padding: 20px 15px;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--neon-blue);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Emotion indicators */
+        .emotion-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .emotion-tag.visible {
+            opacity: 1;
+        }
+
+        .emotion-happy { background: rgba(0, 255, 0, 0.2); color: #0f0; }
+        .emotion-sad { background: rgba(0, 100, 255, 0.2); color: #66b3ff; }
+        .emotion-tired { background: rgba(255, 200, 0, 0.2); color: #ffcc00; }
+        .emotion-excited { background: rgba(255, 100, 0, 0.2); color: #ff6600; }
+        .emotion-neutral { background: rgba(0, 212, 255, 0.2); color: var(--neon-blue); }
+
+        /* Memory indicator */
+        .memory-pill {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            padding: 8px 16px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--neon-blue);
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 200px;
+            text-align: right;
+        }
+
+        .memory-pill.visible {
+            opacity: 1;
+        }
+
+        /* Shortcut buttons */
+        .shortcuts {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .shortcut-chip {
+            padding: 8px 16px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--neon-blue);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .shortcut-chip:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Voice visualizer rings */
+        .voice-rings {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .voice-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--neon-blue);
+            border-radius: 50%;
+            opacity: 0;
+        }
+
+        .voice-ring.active {
+            animation: voice-ring-anim 1.5s ease-out infinite;
+        }
+
+        .voice-ring:nth-child(1) { animation-delay: 0s; }
+        .voice-ring:nth-child(2) { animation-delay: 0.5s; }
+        .voice-ring:nth-child(3) { animation-delay: 1s; }
+
+        @keyframes voice-ring-anim {
+            0% {
+                width: 100px;
+                height: 100px;
+                opacity: 0.8;
+            }
+            100% {
+                width: 300px;
+                height: 300px;
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-grid"></div>
+    <div class="particles" id="particles"></div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">STANDBY</span>
+            </div>
+            <div class="status-indicator">
+                <span id="languageIndicator">EN</span>
+                <span style="margin: 0 10px;">|</span>
+                <span id="connectionStatus">● ONLINE</span>
+            </div>
+        </div>
+
+        <!-- Memory Pill -->
+        <div class="memory-pill" id="memoryPill"></div>
+
+        <!-- Wake Word Indicator -->
+        <div class="wake-indicator" id="wakeIndicator">
+            Listening for "Hey Jarvis"
+        </div>
+
+        <!-- Core Interface -->
+        <div class="core-container">
+            <div class="core-wrapper" id="coreWrapper">
+                <div class="voice-rings" id="voiceRings">
+                    <div class="voice-ring"></div>
+                    <div class="voice-ring"></div>
+                    <div class="voice-ring"></div>
+                </div>
+                <div class="core-ring"></div>
+                <div class="core-ring"></div>
+                <div class="core-ring"></div>
+                <div class="core-ring"></div>
+                <div class="core-center" id="coreCenter">
+                    <svg class="core-icon" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
+                    </svg>
+                </div>
+                
+                <!-- Waveform -->
+                <div class="waveform-container" id="waveform">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+
+            <!-- Response Area -->
+            <div class="response-area">
+                <div class="response-text" id="responseText">
+                    Welcome back, sir. JARVIS is online and ready.
+                </div>
+                <div class="command-text" id="commandText"></div>
+                <div class="emotion-tag" id="emotionTag"></div>
+                
+                <!-- Quick Shortcuts -->
+                <div class="shortcuts" id="shortcuts">
+                    <div class="shortcut-chip" onclick="simulateCommand('open youtube')">YouTube</div>
+                    <div class="shortcut-chip" onclick="simulateCommand('turn on wifi')">WiFi</div>
+                    <div class="shortcut-chip" onclick="simulateCommand('what time is it')">Time</div>
+                    <div class="shortcut-chip" onclick="simulateCommand('search black holes')">Space</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="controls">
+            <button class="control-btn" id="micBtn" title="Voice Command">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                </svg>
+            </button>
+            <button class="control-btn" id="settingsBtn" title="Settings">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L3.16 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                </svg>
+            </button>
+            <button class="control-btn" id="keyboardBtn" title="Text Input (Fallback)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zM5 8h2v2H5V8zm0 3h2v2H5v-2zm12 6H7v-2h10v2zm0-3h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h2 class="settings-title">JARVIS Settings</h2>
+            <button class="close-btn" onclick="toggleSettings()">&times;</button>
+        </div>
+
+        <div class="setting-group">
+            <label class="setting-label">User Name</label>
+            <input type="text" class="setting-input" id="userName" placeholder="Sir" value="Sir">
+        </div>
+
+        <div class="setting-group">
+            <label class="setting-label">Voice Settings</label>
+            <div class="toggle-switch active" onclick="toggleSetting(this)">
+                <span class="toggle-text">Male Voice</span>
+                <div class="toggle-slider"></div>
+            </div>
+            <div class="toggle-switch" onclick="toggleSetting(this)">
+                <span class="toggle-text">High Quality Voice</span>
+                <div class="toggle-slider"></div>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <label class="setting-label">Language</label>
+            <select class="setting-input" id="languageSelect" onchange="changeLanguage(this.value)">
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="hi-IN">Hindi</option>
+                <option value="es-ES">Spanish</option>
+                <option value="fr-FR">French</option>
+            </select>
+        </div>
+
+        <div class="setting-group">
+            <label class="setting-label">Features</label>
+            <div class="toggle-switch active" onclick="toggleSetting(this)">
+                <span class="toggle-text">Wake Word Detection</span>
+                <div class="toggle-slider"></div>
+            </div>
+            <div class="toggle-switch active" onclick="toggleSetting(this)">
+                <span class="toggle-text">Emotion Detection</span>
+                <div class="toggle-slider"></div>
+            </div>
+            <div class="toggle-switch" onclick="toggleSetting(this)">
+                <span class="toggle-text">Background Mode</span>
+                <div class="toggle-slider"></div>
+            </div>
+            <div class="toggle-switch" onclick="toggleSetting(this)">
+                <span class="toggle-text">Sound Effects</span>
+                <div class="toggle-slider"></div>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <label class="setting-label">Interests & Memory</label>
+            <input type="text" class="setting-input" id="userInterests" placeholder="Space, AI, Technology" value="Space, Black Holes, AI">
+        </div>
+
+        <div class="setting-group">
+            <label class="setting-label">Command History</label>
+            <div class="history-panel" id="historyPanel">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <div class="shortcuts" style="margin-top: 30px;">
+            <button class="shortcut-chip" onclick="clearHistory()">Clear History</button>
+            <button class="shortcut-chip" onclick="exportSettings()">Export Data</button>
+        </div>
+    </div>
+
+    <!-- Floating Button (Background Mode) -->
+    <div class="floating-btn" id="floatingBtn" onclick="showMain()">
+        <svg viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
+        </svg>
+    </div>
+
+    <!-- Overlay Hint -->
+    <div class="overlay-hint" id="overlayHint">
+        <h3 style="color: var(--neon-blue); margin-bottom: 15px;">Background Mode Active</h3>
+        <p style="color: rgba(255,255,255,0.8); margin-bottom: 20px;">
+            JARVIS is running in background.<br>
+            Say "Hey Jarvis" to activate.
+        </p>
+        <button class="shortcut-chip" onclick="hideOverlay()">Dismiss</button>
+    </div>
+
+    <script>
+        // JARVIS Core System
+        class JARVIS {
+            constructor() {
+                this.isListening = false;
+                this.isSpeaking = false;
+                this.wakeWordActive = true;
+                this.emotionDetection = true;
+                this.soundEffects = false;
+                this.userName = 'Sir';
+                this.language = 'en-US';
+                this.interests = ['Space', 'Black Holes', 'AI'];
+                this.commandHistory = [];
+                this.memory = {
+                    lastCommand: null,
+                    preferences: {},
+                    context: []
+                };
+                
+                this.recognition = null;
+                this.synthesis = window.speechSynthesis;
+                this.audioContext = null;
+                this.analyser = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.initSpeechRecognition();
+                this.initWaveform();
+                this.initParticles();
+                this.loadSettings();
+                this.startWakeWordDetection();
+                
+                // Welcome message
+                setTimeout(() => {
+                    this.speak("Welcome back, sir. JARVIS is online and ready.");
+                    this.showResponse("Welcome back, sir. JARVIS is online and ready.");
+                }, 1000);
+            }
+
+            initSpeechRecognition() {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    this.recognition = new SpeechRecognition();
+                    this.recognition.continuous = true;
+                    this.recognition.interimResults = true;
+                    this.recognition.lang = this.language;
+                    
+                    this.recognition.onstart = () => {
+                        this.isListening = true;
+                        this.updateStatus('LISTENING', 'listening');
+                        this.showWaveform(true);
+                        document.getElementById('coreCenter').classList.add('active');
+                    };
+                    
+                    this.recognition.onend = () => {
+                        this.isListening = false;
+                        this.updateStatus('STANDBY', 'active');
+                        this.showWaveform(false);
+                        document.getElementById('coreCenter').classList.remove('active');
+                        
+                        // Restart if wake word mode is on
+                        if (this.wakeWordActive) {
+                            setTimeout(() => this.startWakeWordDetection(), 500);
+                        }
+                    };
+                    
+                    this.recognition.onresult = (event) => {
+                        let finalTranscript = '';
+                        let interimTranscript = '';
+                        
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const transcript = event.results[i][0].transcript;
+                            if (event.results[i].isFinal) {
+                                finalTranscript += transcript;
+                            } else {
+                                interimTranscript += transcript;
+                            }
+                        }
+                        
+                        if (interimTranscript) {
+                            this.showCommand(interimTranscript);
+                        }
+                        
+                        if (finalTranscript) {
+                            this.processCommand(finalTranscript);
+                        }
+                    };
+                    
+                    this.recognition.onerror = (event) => {
+                        console.error('Speech recognition error:', event.error);
+                        if (event.error === 'not-allowed') {
+                            this.speak("Please enable microphone access, sir.");
+                        }
+                    };
+                } else {
+                    this.showResponse("Speech recognition not supported in this browser.");
+                }
+            }
+
+            initWaveform() {
+                const container = document.getElementById('waveform');
+                for (let i = 0; i < 20; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'wave-bar';
+                    bar.style.height = '5px';
+                    container.appendChild(bar);
+                }
+            }
+
+            initParticles() {
+                const container = document.getElementById('particles');
+                for (let i = 0; i < 50; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 10 + 's';
+                    particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+                    container.appendChild(particle);
+                }
+            }
+
+            startWakeWordDetection() {
+                if (!this.wakeWordActive || this.isListening) return;
+                
+                this.updateStatus('STANDBY', 'active');
+                document.getElementById('wakeIndicator').classList.add('active');
+                
+                // Simulate wake word detection
+                if (this.recognition) {
+                    try {
+                        this.recognition.start();
+                    } catch (e) {
+                        // Already started
+                    }
+                }
+            }
+
+            processCommand(command) {
+                command = command.toLowerCase().trim();
+                this.showCommand(command);
+                
+                // Check for wake word
+                if (command.includes('hey jarvis') || command.includes('okay jarvis') || command.includes('jarvis')) {
+                    this.handleWakeWord(command);
+                    return;
+                }
+                
+                // If not in active mode, ignore
+                if (!this.isListening && this.wakeWordActive) return;
+                
+                // Detect emotion
+                const emotion = this.detectEmotion(command);
+                this.showEmotion(emotion);
+                
+                // Process the command
+                this.executeCommand(command, emotion);
+            }
+
+            handleWakeWord(command) {
+                this.updateStatus('ACTIVE', 'listening');
+                document.getElementById('wakeIndicator').classList.remove('active');
+                
+                const responses = [
+                    `Yes, ${this.userName}?`,
+                    `Listening, ${this.userName}.`,
+                    "How may I assist you?",
+                    "I'm here, sir."
+                ];
+                
+                const response = responses[Math.floor(Math.random() * responses.length)];
+                this.speak(response);
+                this.showResponse(response);
+                
+                // Remove wake word from command if there's more
+                const actualCommand = command.replace(/(hey |okay )?jarvis[,.]?/i, '').trim();
+                if (actualCommand) {
+                    setTimeout(() => this.processCommand(actualCommand), 1000);
+                }
+            }
+
+            detectEmotion(text) {
+                if (!this.emotionDetection) return 'neutral';
+                
+                const emotions = {
+                    happy: ['happy', 'great', 'awesome', 'excellent', 'good', 'love', 'amazing', 'fantastic'],
+                    sad: ['sad', 'depressed', 'unhappy', 'sorry', 'miss', 'cry', 'upset', 'bad'],
+                    tired: ['tired', 'exhausted', 'sleepy', 'bed', 'rest', 'fatigue', 'done'],
+                    excited: ['excited', 'wow', 'omg', 'incredible', 'hype', 'pumped', 'lets go']
+                };
+                
+                for (const [emotion, keywords] of Object.entries(emotions)) {
+                    if (keywords.some(keyword => text.includes(keyword))) {
+                        return emotion;
+                    }
+                }
+                return 'neutral';
+            }
+
+            executeCommand(command, emotion) {
+                let response = '';
+                let action = null;
+                
+                // App Control
+                if (command.includes('open ')) {
+                    const app = command.replace('open ', '').trim();
+                    response = this.openApp(app);
+                    action = 'app';
+                }
+                // System Controls
+                else if (command.includes('turn on') || command.includes('turn off') || command.includes('toggle')) {
+                    response = this.toggleSystem(command);
+                    action = 'system';
+                }
+                // Time and Date
+                else if (command.includes('time') || command.includes('date') || command.includes('day')) {
+                    response = this.getTimeInfo(command);
+                    action = 'info';
+                }
+                // Search
+                else if (command.includes('search') || command.includes('what is') || command.includes('who is') || command.includes('how to')) {
+                    response = this.handleSearch(command);
+                    action = 'search';
+                }
+                // Messaging
+                else if (command.includes('message') || command.includes('text') || command.includes('whatsapp')) {
+                    response = this.handleMessaging(command);
+                    action = 'message';
+                }
+                // Alarm/Reminder
+                else if (command.includes('alarm') || command.includes('remind') || command.includes('timer')) {
+                    response = this.setAlarm(command);
+                    action = 'alarm';
+                }
+                // Weather
+                else if (command.includes('weather')) {
+                    response = "I apologize, sir. I don't have access to real-time weather data in this environment. In a full implementation, I would fetch current weather conditions.";
+                    action = 'info';
+                }
+                // Greetings
+                else if (command.includes('hello') || command.includes('hi') || command.includes('hey')) {
+                    response = `Hello, ${this.userName}. How may I assist you today?`;
+                    action = 'greeting';
+                }
+                // Personal/Identity
+                else if (command.includes('who are you') || command.includes('your name')) {
+                    response = "I am JARVIS, your personal AI assistant. Just A Rather Very Intelligent System, at your service.";
+                    action = 'identity';
+                }
+                // Thanks
+                else if (command.includes('thank')) {
+                    response = "You're welcome, sir. Always here to help.";
+                    action = 'social';
+                }
+                // Goodbye
+                else if (command.includes('bye') || command.includes('goodbye') || command.includes('sleep')) {
+                    response = "Goodbye, sir. I'll be here when you need me.";
+                    action = 'exit';
+                }
+                // Motivation
+                else if (command.includes('motivate') || command.includes('inspire') || command.includes('quote')) {
+                    response = this.getMotivationalQuote();
+                    action = 'motivation';
+                }
+                // Memory/Preferences
+                else if (command.includes('remember') || command.includes('my favorite') || command.includes('i like')) {
+                    response = this.handleMemory(command);
+                    action = 'memory';
+                }
+                // Help
+                else if (command.includes('help') || command.includes('what can you do')) {
+                    response = "I can open apps, control system settings, search for information, set alarms, read notifications, and remember your preferences. Just say 'open YouTube' or 'search black holes' to try it out.";
+                    action = 'help';
+                }
+                // Default
+                else {
+                    response = "I'm not sure I understood that command, sir. Could you please rephrase?";
+                    action = 'unknown';
+                }
+                
+                // Add emotion-based modifications
+                response = this.modifyResponseForEmotion(response, emotion);
+                
+                // Store in history
+                this.addToHistory(command, response, action);
+                
+                // Speak and display
+                this.speak(response);
+                this.showResponse(response);
+                
+                // Update memory pill
+                this.updateMemoryPill();
+            }
+
+            openApp(appName) {
+                const apps = {
+                    'youtube': { name: 'YouTube', url: 'https://youtube.com', package: 'com.google.android.youtube' },
+                    'instagram': { name: 'Instagram', url: 'https://instagram.com', package: 'com.instagram.android' },
+                    'whatsapp': { name: 'WhatsApp', url: 'whatsapp://', package: 'com.whatsapp' },
+                    'facebook': { name: 'Facebook', url: 'https://facebook.com', package: 'com.facebook.katana' },
+                    'twitter': { name: 'Twitter', url: 'https://twitter.com', package: 'com.twitter.android' },
+                    'camera': { name: 'Camera', url: 'camera://', package: 'com.android.camera' },
+                    'gallery': { name: 'Gallery', url: 'content://media/external/images/media', package: 'com.android.gallery3d' },
+                    'settings': { name: 'Settings', url: 'app-settings:', package: 'com.android.settings' },
+                    'calculator': { name: 'Calculator', url: 'calculator://', package: 'com.google.android.calculator' },
+                    'calendar': { name: 'Calendar', url: 'content://com.android.calendar/time/', package: 'com.google.android.calendar' },
+                    'maps': { name: 'Google Maps', url: 'https://maps.google.com', package: 'com.google.android.apps.maps' },
+                    'chrome': { name: 'Chrome', url: 'https://google.com', package: 'com.android.chrome' },
+                    'gmail': { name: 'Gmail', url: 'https://gmail.com', package: 'com.google.android.gm' },
+                    'spotify': { name: 'Spotify', url: 'spotify://', package: 'com.spotify.music' },
+                    'netflix': { name: 'Netflix', url: 'https://netflix.com', package: 'com.netflix.mediaclient' }
+                };
+                
+                const app = apps[appName.toLowerCase()];
+                if (app) {
+                    // Try to open app
+                    setTimeout(() => {
+                        window.open(app.url, '_blank');
+                    }, 1000);
+                    
+                    const responses = [
+                        `Opening ${app.name}, ${this.userName}.`,
+                        `Launching ${app.name} now.`,
+                        `Accessing ${app.name}.`,
+                        `Here is ${app.name}, sir.`
+                    ];
+                    return responses[Math.floor(Math.random() * responses.length)];
+                } else {
+                    return `I couldn't find ${appName} in my database, sir. Would you like me to search for it instead?`;
+                }
+            }
+
+            toggleSystem(command) {
+                const isOn = command.includes('turn on') || command.includes('enable');
+                const feature = command.replace(/(turn on|turn off|toggle|enable|disable)/, '').trim();
+                
+                const features = {
+                    'wifi': 'WiFi',
+                    'bluetooth': 'Bluetooth',
+                    'flashlight': 'Flashlight',
+                    'airplane mode': 'Airplane Mode',
+                    'mobile data': 'Mobile Data',
+                    'location': 'Location Services',
+                    'hotspot': 'Hotspot'
+                };
+                
+                const featureName = features[feature] || feature;
+                const status = isOn ? 'on' : 'off';
+                
+                // In real Android, this would use system APIs
+                return `I've turned ${status} ${featureName}, sir. Note: In a real Android app, this would control the actual system setting.`;
+            }
+
+            getTimeInfo(command) {
+                const now = new Date();
+                
+                if (command.includes('time')) {
+                    const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    return `The current time is ${time}, ${this.userName}.`;
+                } else if (command.includes('date')) {
+                    const date = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    return `Today is ${date}.`;
+                } else if (command.includes('day')) {
+                    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                    return `Today is ${days[now.getDay()]}, sir.`;
+                }
+                return `It's ${now.toLocaleTimeString()}, sir.`;
+            }
+
+            handleSearch(query) {
+                const searchTerm = query.replace(/(search|what is|who is|how to)/, '').trim();
+                
+                // Knowledge base for common topics
+                const knowledge = {
+                    'black hole': 'A black hole is a region of spacetime where gravity is so strong that nothing—no particles or even electromagnetic radiation such as light—can escape from it. The boundary of no escape is called the event horizon.',
+                    'time dilation': 'Time dilation is a difference in the elapsed time as measured by two clocks. It is either due to relative velocity between them or to a difference in gravitational potential between their locations.',
+                    'quantum mechanics': 'Quantum mechanics is a fundamental theory in physics that provides a description of the physical properties of nature at the scale of atoms and subatomic particles.',
+                    'artificial intelligence': 'Artificial intelligence is the simulation of human intelligence processes by machines, especially computer systems. These processes include learning, reasoning, and self-correction.',
+                    'dark matter': 'Dark matter is a hypothetical form of matter that is thought to account for approximately 85% of the matter in the universe. It is called "dark" because it does not appear to interact with observable electromagnetic radiation.',
+                    'neutron star': 'A neutron star is the collapsed core of a massive supergiant star. Neutron stars are the smallest and densest stellar objects, excluding black holes and hypothetical white holes.',
+                    'mars': 'Mars is the fourth planet from the Sun and the second-smallest planet in the Solar System. It is often referred to as the "Red Planet" due to the effect of the iron oxide prevalent on its surface.'
+                };
+                
+                for (const [topic, info] of Object.entries(knowledge)) {
+                    if (searchTerm.toLowerCase().includes(topic)) {
+                        return `${info} Would you like to know more about ${topic}, sir?`;
+                    }
+                }
+                
+                // Fallback to web search
+                setTimeout(() => {
+                    window.open(`https://www.google.com/search?q=${encodeURIComponent(searchTerm)}`, '_blank');
+                }, 1500);
+                
+                return `I don't have that information in my local database, sir. Opening web search for "${searchTerm}".`;
+            }
+
+            handleMessaging(command) {
+                // Extract recipient and message if possible
+                const match = command.match(/(?:message|text)\s+(\w+)\s*(?:saying|that|to)?\s*(.+)?/i);
+                
+                if (match) {
+                    const recipient = match[1];
+                    const message = match[2] || '';
+                    
+                    if (message) {
+                        return `I've prepared a message to ${recipient}: "${message}". Please review and send it manually for security, sir.`;
+                    } else {
+                        return `Opening messaging app to ${recipient}. Please type your message, sir. I don't auto-send messages for security reasons.`;
+                    }
+                }
+                
+                return "Opening messaging interface. Please specify the recipient and message, sir.";
+            }
+
+            setAlarm(command) {
+                const timeMatch = command.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+                
+                if (timeMatch) {
+                    let hours = parseInt(timeMatch[1]);
+                    const minutes = timeMatch[2] || '00';
+                    const period = timeMatch[3];
+                    
+                    if (period === 'pm' && hours !== 12) hours += 12;
+                    if (period === 'am' && hours === 12) hours = 0;
+                    
+                    return `Alarm set for ${hours}:${minutes}. I'll remind you, ${this.userName}.`;
+                }
+                
+                return "When would you like me to set the alarm, sir? Please specify the time.";
+            }
+
+            getMotivationalQuote() {
+                const quotes = [
+                    "Curiosity is what drives discovery, sir.",
+                    "You're closer to understanding than you think.",
+                    "The only limit to our realization of tomorrow is our doubts of today.",
+                    "Innovation distinguishes between a leader and a follower.",
+                    "The future belongs to those who believe in the beauty of their dreams.",
+                    "Every great achievement was once considered impossible.",
+                    "Sir, remember: Progress is impossible without change."
+                ];
+                
+                const quote = quotes[Math.floor(Math.random() * quotes.length)];
+                return `${quote} Shall I provide another, or is there something else I can assist with?`;
+            }
+
+            handleMemory(command) {
+                if (command.includes('remember')) {
+                    const info = command.replace('remember', '').trim();
+                    this.memory.preferences[info] = true;
+                    return `Noted, ${this.userName}. I'll remember that.`;
+                }
+                
+                if (command.includes('my favorite') || command.includes('i like')) {
+                    const interest = command.replace(/(my favorite|i like)/, '').trim();
+                    if (!this.interests.includes(interest)) {
+                        this.interests.push(interest);
+                    }
+                    return `I've noted your interest in ${interest}, sir. I'll remember that for future conversations.`;
+                }
+                
+                return "Memory updated, sir.";
+            }
+
+            modifyResponseForEmotion(response, emotion) {
+                const modifiers = {
+                    happy: ["That's wonderful to hear, sir. ", "Excellent! ", "I'm glad to hear that. "],
+                    sad: ["I understand, sir. ", "I'm here for you. ", "Take your time. "],
+                    tired: ["You seem tired, sir. Perhaps take a break? ", "I can handle things while you rest. ", "Don't push yourself too hard. "],
+                    excited: ["That enthusiasm is contagious! ", "Excellent energy, sir! ", "Let's channel that excitement! "],
+                    neutral: [""]
+                };
+                
+                const prefix = modifiers[emotion][Math.floor(Math.random() * modifiers[emotion].length)];
+                return prefix + response;
+            }
+
+            speak(text) {
+                if (!this.synthesis) return;
+                
+                // Cancel any ongoing speech
+                this.synthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = this.language;
+                utterance.rate = 0.9; // Slightly slower for clarity
+                utterance.pitch = 0.9; // Slightly deeper
+                
+                // Try to find a good voice
+                const voices = this.synthesis.getVoices();
+                const preferredVoice = voices.find(v => v.name.includes('Google US English')) ||
+                                     voices.find(v => v.name.includes('Samantha')) ||
+                                     voices.find(v => v.lang === 'en-US' && v.name.includes('Male')) ||
+                                     voices[0];
+                
+                if (preferredVoice) {
+                    utterance.voice = preferredVoice;
+                }
+                
+                utterance.onstart = () => {
+                    this.isSpeaking = true;
+                    this.updateStatus('SPEAKING', 'active');
+                };
+                
+                utterance.onend = () => {
+                    this.isSpeaking = false;
+                    this.updateStatus('STANDBY', 'active');
+                };
+                
+                this.synthesis.speak(utterance);
+            }
+
+            showResponse(text) {
+                const el = document.getElementById('responseText');
+                el.textContent = text;
+                el.classList.add('visible');
+                
+                // Hide after 10 seconds if not replaced
+                setTimeout(() => {
+                    if (el.textContent === text) {
+                        el.classList.remove('visible');
+                    }
+                }, 10000);
+            }
+
+            showCommand(text) {
+                document.getElementById('commandText').textContent = `"${text}"`;
+            }
+
+            showEmotion(emotion) {
+                const el = document.getElementById('emotionTag');
+                el.textContent = emotion;
+                el.className = `emotion-tag emotion-${emotion} visible`;
+                
+                setTimeout(() => {
+                    el.classList.remove('visible');
+                }, 3000);
+            }
+
+            updateStatus(text, state) {
+                document.getElementById('statusText').textContent = text;
+                const dot = document.getElementById('statusDot');
+                dot.className = `status-dot ${state}`;
+            }
+
+            showWaveform(show) {
+                document.getElementById('waveform').classList.toggle('visible', show);
+                
+                if (show) {
+                    this.animateWaveform();
+                }
+            }
+
+            animateWaveform() {
+                if (!this.isListening) return;
+                
+                const bars = document.querySelectorAll('.wave-bar');
+                bars.forEach(bar => {
+                    const height = Math.random() * 50 + 5;
+                    bar.style.height = height + 'px';
+                });
+                
+                requestAnimationFrame(() => this.animateWaveform());
+            }
+
+            updateMemoryPill() {
+                const pill = document.getElementById('memoryPill');
+                if (this.interests.length > 0) {
+                    pill.textContent = `Interests: ${this.interests.join(', ')}`;
+                    pill.classList.add('visible');
+                }
+            }
+
+            addToHistory(command, response, action) {
+                const item = {
+                    time: new Date().toLocaleTimeString(),
+                    command,
+                    response,
+                    action
+                };
+                
+                this.commandHistory.unshift(item);
+                if (this.commandHistory.length > 50) {
+                    this.commandHistory.pop();
+                }
+                
+                this.updateHistoryPanel();
+            }
+
+            updateHistoryPanel() {
+                const panel = document.getElementById('historyPanel');
+                panel.innerHTML = this.commandHistory.map(item => `
+                    <div class="history-item">
+                        <div class="history-time">${item.time} • ${item.action}</div>
+                        <div class="history-cmd">${item.command}</div>
+                        <div class="history-resp">${item.response.substring(0, 100)}${item.response.length > 100 ? '...' : ''}</div>
+                    </div>
+                `).join('');
+            }
+
+            loadSettings() {
+                const saved = localStorage.getItem('jarvis_settings');
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    this.userName = settings.userName || 'Sir';
+                    this.language = settings.language || 'en-US';
+                    this.interests = settings.interests || ['Space', 'Black Holes'];
+                    document.getElementById('userName').value = this.userName;
+                    document.getElementById('userInterests').value = this.interests.join(', ');
+                }
+            }
+
+            saveSettings() {
+                const settings = {
+                    userName: this.userName,
+                    language: this.language,
+                    interests: this.interests,
+                    wakeWordActive: this.wakeWordActive,
+                    emotionDetection: this.emotionDetection
+                };
+                localStorage.setItem('jarvis_settings', JSON.stringify(settings));
+            }
+        }
+
+        // Initialize JARVIS
+        let jarvis;
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            jarvis = new JARVIS();
+            
+            // Event listeners
+            document.getElementById('micBtn').addEventListener('click', () => {
+                if (jarvis.isListening) {
+                    jarvis.recognition.stop();
+                } else {
+                    jarvis.recognition.start();
+                }
+            });
+            
+            document.getElementById('coreCenter').addEventListener('click', () => {
+                document.getElementById('micBtn').click();
+            });
+            
+            document.getElementById('settingsBtn').addEventListener('click', toggleSettings);
+            
+            document.getElementById('keyboardBtn').addEventListener('click', () => {
+                const text = prompt('Enter command (fallback mode):');
+                if (text) {
+                    jarvis.processCommand(text);
+                }
+            });
+            
+            // Settings change handlers
+            document.getElementById('userName').addEventListener('change', (e) => {
+                jarvis.userName = e.target.value || 'Sir';
+                jarvis.saveSettings();
+            });
+            
+            document.getElementById('userInterests').addEventListener('change', (e) => {
+                jarvis.interests = e.target.value.split(',').map(i => i.trim());
+                jarvis.saveSettings();
+                jarvis.updateMemoryPill();
+            });
+        });
+
+        // UI Functions
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('open');
+            
+            if (panel.classList.contains('open')) {
+                jarvis.updateHistoryPanel();
+            }
+        }
+
+        function toggleSetting(element) {
+            element.classList.toggle('active');
+            const text = element.querySelector('.toggle-text').textContent;
+            
+            if (text.includes('Wake Word')) {
+                jarvis.wakeWordActive = element.classList.contains('active');
+            } else if (text.includes('Emotion')) {
+                jarvis.emotionDetection = element.classList.contains('active');
+            } else if (text.includes('Sound')) {
+                jarvis.soundEffects = element.classList.contains('active');
+            }
+            
+            jarvis.saveSettings();
+        }
+
+        function changeLanguage(lang) {
+            jarvis.language = lang;
+            if (jarvis.recognition) {
+                jarvis.recognition.lang = lang;
+            }
+            document.getElementById('languageIndicator').textContent = lang.split('-')[0].toUpperCase();
+            jarvis.saveSettings();
+        }
+
+        function simulateCommand(cmd) {
+            jarvis.processCommand(cmd);
+        }
+
+        function clearHistory() {
+            jarvis.commandHistory = [];
+            jarvis.updateHistoryPanel();
+        }
+
+        function exportSettings() {
+            const data = JSON.stringify(jarvis.commandHistory, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'jarvis-data.json';
+            a.click();
+        }
+
+        function showMain() {
+            document.getElementById('floatingBtn').classList.remove('visible');
+            document.querySelector('.main-container').style.display = 'flex';
+        }
+
+        function hideOverlay() {
+            document.getElementById('overlayHint').classList.remove('show');
+        }
+
+        // Background mode simulation
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Enter background mode
+                document.getElementById('floatingBtn').classList.add('visible');
+            }
+        });
+
+        // Request microphone permission on first interaction
+        document.addEventListener('click', () => {
+            if (!jarvis.audioContext) {
+                jarvis.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }, { once: true });
+    </script>
+</body>
+  </html>
